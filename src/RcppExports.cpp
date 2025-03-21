@@ -46,9 +46,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// nllggamma_single_cpp
-NumericVector nllggamma_single_cpp(double x, double mu, double sigma, double nu, NumericVector epsilon, int kappa);
-RcppExport SEXP _eggamma_nllggamma_single_cpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP, SEXP nuSEXP, SEXP epsilonSEXP, SEXP kappaSEXP) {
+// nllggamma_single_gh_cpp
+NumericVector nllggamma_single_gh_cpp(double x, double mu, double sigma, double nu, NumericVector epsilon, int kappa);
+RcppExport SEXP _eggamma_nllggamma_single_gh_cpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP, SEXP nuSEXP, SEXP epsilonSEXP, SEXP kappaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -58,13 +58,29 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type nu(nuSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type epsilon(epsilonSEXP);
     Rcpp::traits::input_parameter< int >::type kappa(kappaSEXP);
-    rcpp_result_gen = Rcpp::wrap(nllggamma_single_cpp(x, mu, sigma, nu, epsilon, kappa));
+    rcpp_result_gen = Rcpp::wrap(nllggamma_single_gh_cpp(x, mu, sigma, nu, epsilon, kappa));
+    return rcpp_result_gen;
+END_RCPP
+}
+// nllggamma_single_g_cpp
+NumericVector nllggamma_single_g_cpp(double x, double mu, double sigma, double nu, NumericVector epsilon, int kappa);
+RcppExport SEXP _eggamma_nllggamma_single_g_cpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP, SEXP nuSEXP, SEXP epsilonSEXP, SEXP kappaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< double >::type nu(nuSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type epsilon(epsilonSEXP);
+    Rcpp::traits::input_parameter< int >::type kappa(kappaSEXP);
+    rcpp_result_gen = Rcpp::wrap(nllggamma_single_g_cpp(x, mu, sigma, nu, epsilon, kappa));
     return rcpp_result_gen;
 END_RCPP
 }
 // nllggamma_cpp
-NumericVector nllggamma_cpp(NumericVector x, NumericVector mu, NumericVector sigma, NumericVector nu, NumericVector weights, NumericVector epsilon, int kappa);
-RcppExport SEXP _eggamma_nllggamma_cpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP, SEXP nuSEXP, SEXP weightsSEXP, SEXP epsilonSEXP, SEXP kappaSEXP) {
+NumericMatrix nllggamma_cpp(NumericVector x, NumericVector mu, NumericVector sigma, NumericVector nu, NumericVector weights, NumericVector epsilon, int kappa, bool with_hessian, bool add);
+RcppExport SEXP _eggamma_nllggamma_cpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP, SEXP nuSEXP, SEXP weightsSEXP, SEXP epsilonSEXP, SEXP kappaSEXP, SEXP with_hessianSEXP, SEXP addSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -75,7 +91,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type epsilon(epsilonSEXP);
     Rcpp::traits::input_parameter< int >::type kappa(kappaSEXP);
-    rcpp_result_gen = Rcpp::wrap(nllggamma_cpp(x, mu, sigma, nu, weights, epsilon, kappa));
+    Rcpp::traits::input_parameter< bool >::type with_hessian(with_hessianSEXP);
+    Rcpp::traits::input_parameter< bool >::type add(addSEXP);
+    rcpp_result_gen = Rcpp::wrap(nllggamma_cpp(x, mu, sigma, nu, weights, epsilon, kappa, with_hessian, add));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -83,8 +101,9 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_eggamma_dggamma_single_cpp", (DL_FUNC) &_eggamma_dggamma_single_cpp, 8},
     {"_eggamma_dggamma_cpp", (DL_FUNC) &_eggamma_dggamma_cpp, 8},
-    {"_eggamma_nllggamma_single_cpp", (DL_FUNC) &_eggamma_nllggamma_single_cpp, 6},
-    {"_eggamma_nllggamma_cpp", (DL_FUNC) &_eggamma_nllggamma_cpp, 7},
+    {"_eggamma_nllggamma_single_gh_cpp", (DL_FUNC) &_eggamma_nllggamma_single_gh_cpp, 6},
+    {"_eggamma_nllggamma_single_g_cpp", (DL_FUNC) &_eggamma_nllggamma_single_g_cpp, 6},
+    {"_eggamma_nllggamma_cpp", (DL_FUNC) &_eggamma_nllggamma_cpp, 9},
     {NULL, NULL, 0}
 };
 

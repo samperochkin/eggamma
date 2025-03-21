@@ -9,11 +9,15 @@ dggamma_cpp <- function(x, mu, sigma, nu, epsilon, kappa, return_log = FALSE, ne
     .Call('_eggamma_dggamma_cpp', PACKAGE = 'eggamma', x, mu, sigma, nu, epsilon, kappa, return_log, negate_loglik)
 }
 
-nllggamma_single_cpp <- function(x, mu, sigma, nu, epsilon, kappa) {
-    .Call('_eggamma_nllggamma_single_cpp', PACKAGE = 'eggamma', x, mu, sigma, nu, epsilon, kappa)
+nllggamma_single_gh_cpp <- function(x, mu, sigma, nu, epsilon, kappa) {
+    .Call('_eggamma_nllggamma_single_gh_cpp', PACKAGE = 'eggamma', x, mu, sigma, nu, epsilon, kappa)
 }
 
-nllggamma_cpp <- function(x, mu, sigma, nu, weights, epsilon, kappa) {
-    .Call('_eggamma_nllggamma_cpp', PACKAGE = 'eggamma', x, mu, sigma, nu, weights, epsilon, kappa)
+nllggamma_single_g_cpp <- function(x, mu, sigma, nu, epsilon, kappa) {
+    .Call('_eggamma_nllggamma_single_g_cpp', PACKAGE = 'eggamma', x, mu, sigma, nu, epsilon, kappa)
+}
+
+nllggamma_cpp <- function(x, mu, sigma, nu, weights, epsilon, kappa, with_hessian = TRUE, add = TRUE) {
+    .Call('_eggamma_nllggamma_cpp', PACKAGE = 'eggamma', x, mu, sigma, nu, weights, epsilon, kappa, with_hessian, add)
 }
 

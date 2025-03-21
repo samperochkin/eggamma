@@ -211,8 +211,8 @@ NumericVector dggamma_cpp(NumericVector x, NumericVector mu, NumericVector sigma
 // negative log-likelihood (w/ gradients and Hessian) --------------------------
 //------------------------------------------------------------------------------
 // [[Rcpp::export]]
-NumericVector nllggamma_single_cpp(double x, double mu, double sigma, double nu,
-                                   NumericVector epsilon, int kappa) {
+NumericVector nllggamma_single_gh_cpp(double x, double mu, double sigma, double nu,
+                                       NumericVector epsilon, int kappa) {
   
   // if (mu <= 0) stop("mu (in generalized gamma) is not positive");
   // if (sigma <= 0) stop("sigma (in generalized gamma) is not positive");
@@ -476,20 +476,199 @@ NumericVector nllggamma_single_cpp(double x, double mu, double sigma, double nu,
 }
 
 
+
+//------------------------------------------------------------------------------
+// negative log-likelihood (w/ gradients only) ---------------------------------
+//------------------------------------------------------------------------------
+// [[Rcpp::export]]
+NumericVector nllggamma_single_g_cpp(double x, double mu, double sigma, double nu,
+                                     NumericVector epsilon, int kappa) {
+  
+  // if (mu <= 0) stop("mu (in generalized gamma) is not positive");
+  // if (sigma <= 0) stop("sigma (in generalized gamma) is not positive");
+  
+  
+  // setup
+  double mu2 = mu * mu;
+  double sigma2 = sigma * sigma;
+  double nu2 = nu * nu;
+  double nu_abs = std::abs(nu);
+  double l_x_mu = log(x/mu);
+  double z = exp(nu * l_x_mu);
+  double xi_inv = sigma2 * nu2;
+  
+  // components of ll and scores
+  double a1 = 0.0; double a1_mu = 0.0; double a1_sigma = 0.0; double a1_nu = 0.0;
+  double a2 = 0.0; double a2_mu = 0.0; double a2_sigma = 0.0; double a2_nu = 0.0;
+  double b1 = 0.0; double b1_sigma = 0.0; double b1_nu = 0.0;
+  double b2 = 0.0; double b2_sigma = 0.0; double b2_nu = 0.0;
+  
+  // a part --------------------------
+  
+  if (nu_abs > epsilon[0]){
+    double xi = 1/xi_inv;
+    
+    a1 += xi*(log(z) + 1 - z);
+    a1_mu += (z-1)/(mu*sigma2*nu);
+    a1_sigma += 2*xi*(z-1 - log(z))/sigma;
+    a1_nu += 2*xi*((z-1) - (z+1)*log(z)/2)/nu;
+  }
+  
+  if (nu_abs < epsilon[1]){
+    
+    // ll
+    double log_prod = l_x_mu * l_x_mu / (2 * sigma2);
+    a2 -= log_prod; // Part of log-normal log-lik
+    for (int k = 3; k <= (nu_abs > 0 ? kappa + 2 : 0); k++) {
+      log_prod *= nu * l_x_mu / k;
+      a2 -= log_prod;
+    }
+    
+    // SCORES -------------------------------------
+    // mu
+    log_prod = l_x_mu / (mu*sigma2);
+    a2_mu += log_prod;
+    for (int k = 2; k <= (nu_abs > 0 ? kappa + 1 : 0); k++) {
+      log_prod *= nu * l_x_mu / k;
+      a2_mu += log_prod;
+    }
+    
+    // sigma
+    log_prod = l_x_mu*l_x_mu / (sigma2*sigma);
+    a2_sigma += log_prod;
+    for (int k = 3; k <= (nu_abs > 0 ? kappa + 2 : 0); k++) {
+      log_prod *= nu * l_x_mu / k;
+      a2_sigma += log_prod;
+    }
+    
+    // nu
+    log_prod = - l_x_mu*l_x_mu*l_x_mu / (6*sigma2);
+    a2_nu += log_prod;
+    for (int k = 4; k <= (nu_abs > 0 ? kappa + 3 : 0); k++) {
+      log_prod *= nu * l_x_mu / k;
+      a2_nu += (k-2) * log_prod;
+    }
+  }
+  
+  double w_a = (nu_abs > epsilon[1]) ? 1 : (nu_abs > epsilon[0] ? (nu_abs-epsilon[0])/(epsilon[1]-epsilon[0]) : 0);
+  double a = w_a * a1 + (1-w_a) * a2;
+  double a_mu = w_a * a1_mu + (1-w_a) * a2_mu;
+  double a_sigma = w_a * a1_sigma + (1-w_a) * a2_sigma;
+  double a_nu = w_a * a1_nu + (1-w_a) * a2_nu;
+
+  
+  // b part --------------------------
+  
+  if (xi_inv > epsilon[0]){
+    double xi = 1/xi_inv;
+    double tri_xi = R::trigamma(xi);
+    double dig_minus_log = R::digamma(xi) - log(xi);
+    b1 += log(nu_abs) - xi*(1-log(xi)) - lgamma(xi);
+    b1_sigma += 2*xi*dig_minus_log/sigma;
+    b1_nu += 2*xi*dig_minus_log/nu + 1/nu;
+  }
+  
+  if (xi_inv < epsilon[1]){
+    
+    // kappa >= 0 ----------------------------------------
+    b2 -= log(sigma)+log(2*M_PI)/2;
+    b2_sigma -= 1/sigma;
+
+    if(nu_abs > 0 && kappa >= 1){
+      double nu_sigma_prod = nu2 * sigma2;
+      double nu4_sigma4 = nu_sigma_prod * nu_sigma_prod;
+      
+      // kappa >= 1 ----------------------------------------
+      // nu
+      nu_sigma_prod = nu * sigma2;
+      nu4_sigma4 = nu_sigma_prod * nu_sigma_prod * nu2;
+      b2_nu -= nu_sigma_prod * B_even[1];
+      for (int k = 2; k <= (static_cast<double>(kappa) / 4 + .75); k++) {
+        nu_sigma_prod *= nu4_sigma4;
+        b2_nu -= nu_sigma_prod * B_even[k] / k;
+      }
+      
+      if (kappa >= 2){
+        // kappa >= 2 ----------------------------------------
+        
+        // ll
+        nu_sigma_prod = nu2 * sigma2;
+        b2 -= nu_sigma_prod * B_even[1] / 2;
+        for (int k = 2; k <= (static_cast<double>(kappa) / 4 + 0.5); k++) {
+          nu_sigma_prod *= nu4_sigma4;
+          b2 -= nu_sigma_prod * B_even[k] / (2*k * (2*k - 1));
+        }
+        
+        // sigma
+        nu_sigma_prod = nu2 * sigma;
+        nu4_sigma4 = nu_sigma_prod * nu_sigma_prod * sigma2;
+        b2_sigma -= nu_sigma_prod * B_even[1];
+        for (int k = 2; k <= (static_cast<double>(kappa) / 4 + 0.5); k++) {
+          nu_sigma_prod *= nu4_sigma4;
+          b2_sigma -= nu_sigma_prod * B_even[k] / k;
+        }
+      }
+    }
+  }
+  
+  double w_b = (xi_inv > epsilon[1]) ? 1 : (xi_inv > epsilon[0] ? (xi_inv-epsilon[0])/(epsilon[1]-epsilon[0]) : 0);
+  double b = w_b * b1 + (1-w_b) * b2;
+  double b_sigma = w_b * b1_sigma + (1-w_b) * b2_sigma;
+  double b_nu = w_b * b1_nu + (1-w_b) * b2_nu;
+
+  
+  
+  // Putting it all together
+  // negative log-likelihood
+  double nll = log(x) - a - b;
+  
+  // negative scores
+  double mu_s = -a_mu;
+  double sigma_s = -a_sigma - b_sigma;
+  double nu_s = -a_nu - b_nu;
+  
+  return NumericVector {nll, mu_s, sigma_s, nu_s};
+}
+
+
 //------------------------------------------------------------------------------
 // Cpp wrapper of the negative log-likelihood (w/ gradients and Hessians) ------
 //------------------------------------------------------------------------------
 // [[Rcpp::export]]
-NumericVector nllggamma_cpp(NumericVector x, NumericVector mu, NumericVector sigma, NumericVector nu,
-                            NumericVector weights, NumericVector epsilon, int kappa) {
+NumericMatrix nllggamma_cpp(NumericVector x, NumericVector mu, NumericVector sigma, NumericVector nu,
+                            NumericVector weights, NumericVector epsilon, int kappa,
+                            bool with_hessian = true, bool add = true) {
   // NumericMatrix h1g_prod, NumericMatrix h2g) {
   
   // Different possibilities for the lengths of x, mu, sigma, nu is taken care of in the R wrapper,
   // where some conditions are also checked.
   
-  NumericVector nll(10); // nll, three gradients, and six hessians
-  for (int i = 0; i < x.size(); i++)
-    nll += weights[i]*nllggamma_single_cpp(x[i], mu[i], sigma[i], nu[i], epsilon, kappa);
-  
-  return nll;
+  if(add){
+    NumericVector nll(4 + 6 * with_hessian); // nll, three gradients, and (if asked for) six hessians
+    
+    if(with_hessian){
+      for (int i = 0; i < x.size(); i++)
+        nll += weights[i]*nllggamma_single_gh_cpp(x[i], mu[i], sigma[i], nu[i], epsilon, kappa);
+      
+    }else{
+      for (int i = 0; i < x.size(); i++)
+        nll += weights[i]*nllggamma_single_g_cpp(x[i], mu[i], sigma[i], nu[i], epsilon, kappa);
+      
+    }
+    return NumericMatrix(1, nll.size(), nll.begin());
+
+  }else{
+    NumericMatrix nll(x.size(), 4 + 6 * with_hessian); // nll, three gradients, and (if asked for) six hessians
+    
+    if(with_hessian){
+      for (int i = 0; i < x.size(); i++)
+        nll(i,_) = weights[i]*nllggamma_single_gh_cpp(x[i], mu[i], sigma[i], nu[i], epsilon, kappa);
+      
+    }else{
+      for (int i = 0; i < x.size(); i++)
+        nll(i,_) = weights[i]*nllggamma_single_g_cpp(x[i], mu[i], sigma[i], nu[i], epsilon, kappa);
+
+    }
+    return nll;
+  }
 }
